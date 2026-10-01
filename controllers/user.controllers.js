@@ -50,8 +50,56 @@ const login = async (req, res) => {
         console.log(e);
         return res.status(500).json({ message: 'Internal server error' });
     }
-}
+};
+
+
+const sendOtp = async (req, res) => {
+    const id = req.params.id;
+    try {
+        const user = await User.findById(id);
+        if(!user){
+            return res.status(400).json({ message: 'User not found'});
+        }
+        const otp = Math.floor(100000 + Math.random() * 900000);
+        const otpExpiresAt = Date.now() + 10 * 60 * 1000;
+        user.otp = otp;
+        user.otpExpiresAt = otpExpiresAt;
+        await user.save();
+        return res.status(201).json({ message: 'OTP sent successfully', otp: otp, otpExpiresAt: otpExpiresAt });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+const verifyOtp = async (req, res) => {
+    const { otp } = req.body;
+    try {
+        const user = await User.findOne({ otp: otp });
+        if(!user){
+            return res.status(400).json({ message: 'User not found' });
+        }
+        if(user.otp !== otp){
+            return res.status(400).json({ message: 'Invalid OTP' });
+        }
+        if (user.otpExpiresAt < Date.now()){
+            return res.status(400).json({ message: 'OTP expired' });
+        }
+        if(user.isVerified){
+            return res.status(400).json({ message: 'Email already verified' });
+        }
+
+        user.isVerified = true,
+        user.otp = null;
+        user,otpExpiresAt = null;
+        await user.save();
+        return res.status(200).json({ message: 'Email successfully verified' });
+    } catch (e) {
+        console.log(e);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
 
 
 
-module.exports = { signUp, login };
+module.exports = { signUp, login, sendOtp, verifyOtp };
