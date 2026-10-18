@@ -1,6 +1,7 @@
 const User = require("../models/user.models");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const sendEmail = require("../validators/email");
 require('dotenv').config();
 
 
@@ -65,6 +66,9 @@ const sendOtp = async (req, res) => {
         user.otp = otp;
         user.otpExpiresAt = otpExpiresAt;
         await user.save();
+
+        sendEmail(user.email, "OTP for verification", `Your OTP is ${otp}`);
+
         return res.status(201).json({ message: 'OTP sent successfully', otp: otp, otpExpiresAt: otpExpiresAt });
     } catch (e) {
         console.log(e);
